@@ -17,7 +17,6 @@ const config = {
     pointsPerCandy: 10,
     timerDuration: 15,
     initialSmashValue: 0,
-    orientationChallengeDelay: 5000, // 5 seconds before first challenge
 };
 
 class Game {
@@ -42,14 +41,23 @@ class Game {
         // Orientation challenge elements
         this.orientationChallengeContainer = document.getElementById('orientation-challenge-container');
         this.orientationIndicator = document.getElementById('orientation-indicator');
-        this.currentTargetOrientation = null;
+        this.currentTargetOrientation = ORIENTATIONS.DOWN; // Start with regular phone orientation
         this.isOrientationCorrect = false;
         
         this.updateScore(0);
         this.updateSmashUI();
         this.startTimer();
         this.board.initialize();
-        this.scheduleFirstOrientationChallenge();
+        this.setupInitialOrientation();
+    }
+
+    setupInitialOrientation() {
+        this.orientationIndicator.className = '';
+        this.orientationIndicator.classList.add(this.currentTargetOrientation);
+        this.orientationChallengeContainer.classList.remove('hidden');
+
+        // Immediately check if the current orientation is correct
+        this.onOrientationChange(this.orientationHandler.getCurrentOrientation());
     }
 
     scheduleFirstOrientationChallenge() {

@@ -3,8 +3,6 @@ const ORIENTATIONS = {
     RIGHT: 'right', // Landscape, tilted left
     LEFT: 'left', // Landscape, tilted right
     UP: 'up', // Portrait, upside down
-    FACE_UP: 'face-up', // Laying flat, screen up
-    FACE_DOWN: 'face-down' // Laying flat, screen down
 };
 
 class OrientationHandler {
@@ -56,12 +54,8 @@ class OrientationHandler {
 
         let newOrientation = this.currentOrientation;
 
-        // Thresholds to determine orientation, checking most restrictive first
-        if (beta > 160 || beta < -160) {
-            newOrientation = ORIENTATIONS.FACE_DOWN;
-        } else if (Math.abs(beta) < 25 && Math.abs(gamma) < 25) {
-            newOrientation = ORIENTATIONS.FACE_UP;
-        } else if (gamma < -45) {
+        // Thresholds to determine orientation
+        if (gamma < -45) {
             newOrientation = ORIENTATIONS.LEFT; // Tilted right, gravity pulls left
         } else if (gamma > 45) {
             newOrientation = ORIENTATIONS.RIGHT; // Tilted left, gravity pulls right
