@@ -19,6 +19,14 @@ const config = {
     initialSmashValue: 0,
 };
 
+let gameInstance = null; // To hold the game instance
+
+function startGame() {
+    document.getElementById('calibration-overlay').classList.add('hidden');
+    document.getElementById('game-container').classList.remove('hidden');
+    gameInstance = new Game();
+}
+
 class Game {
     constructor() {
         this.board = new Board(config.boardSize, config.candyTypes, this.onMatch.bind(this));
@@ -36,7 +44,7 @@ class Game {
         this.isTimerPaused = false;
         
         this.orientationHandler = new OrientationHandler(this.onOrientationChange.bind(this));
-        this.inputHandler = new InputHandler(this.board.boardElement, this.onSwap.bind(this), this.onSmash.bind(this), this.orientationHandler, () => this.isOrientationCorrect);
+        this.inputHandler = new InputHandler(this.board.boardElement, this.onSwap.bind(this), this.onSmash.bind(this));
 
         // Orientation challenge elements
         this.orientationChallengeContainer = document.getElementById('orientation-challenge-container');
@@ -49,6 +57,9 @@ class Game {
         this.startTimer();
         this.board.initialize();
         this.setupInitialOrientation();
+
+        // The handler is already listening post-calibration, just check the orientation.
+        this.onOrientationChange(this.orientationHandler.getCurrentOrientation());
     }
 
     setupInitialOrientation() {
@@ -67,6 +78,8 @@ class Game {
     }
 
     startOrientationChallenge() {
+        if (!this.orientationHandler.isListening) return; // Don't start if not ready
+
         const possibleOrientations = Object.values(ORIENTATIONS).filter(o => o !== this.board.gravityDirection);
         this.currentTargetOrientation = possibleOrientations[Math.floor(Math.random() * possibleOrientations.length)];
         
@@ -272,5 +285,24 @@ class Game {
 }
 
 window.addEventListener('load', () => {
-    new Game();
+    // Don't create game immediately. Wait for calibration.
+    const calibrateButton = document.getElementById('calibrate-button');
+    const tempOrientationHandler = new OrientationHandler(() => {}); // Temp handler for permission
+
+    calibrateButton.addEventListener('click', async () => {
+        // Must request permission on user gesture
+        const granted = await tempOrientationHandler.requestPermission();
+        if (granted) {
+            // Calibrate with the current orientation values
+            await tempOrientationHandler.calibrate();
+            startGame(); // This creates the real game instance
+            gameInstance.orientationHandler = tempOrientationHandler; // Pass the calibrated handler
+            gameInstance.orientationHandler.onOrientationChange = gameInstance.onOrientationChange.bind(gameInstance);
+            gameInstance.inputHandler.setOrientationHandler(gameInstance.orientationHandler, () => gameInstance.isOrientationCorrect);
+            gameInstance.orientationHandler.startListening();
+            gameInstance.onOrientationChange(gameInstance.orientationHandler.getCurrentOrientation()); // Initial check
+        } else {
+            alert("Orientation permission is required to play this game.");
+        }
+    });
 });
