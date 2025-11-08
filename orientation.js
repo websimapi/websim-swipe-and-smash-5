@@ -78,21 +78,25 @@ class OrientationHandler {
         
         if (event.beta === null || event.gamma === null) return;
 
-        // Apply calibration offset
+        // Apply calibration offset to get relative values
         const beta = event.beta - this.betaOffset;
         const gamma = event.gamma - this.gammaOffset;
 
         let newOrientation = this.currentOrientation;
 
-        // Thresholds to determine orientation
-        if (gamma < -45) {
-            newOrientation = ORIENTATIONS.LEFT; // Tilted right, gravity pulls left
-        } else if (gamma > 45) {
-            newOrientation = ORIENTATIONS.RIGHT; // Tilted left, gravity pulls right
-        } else if (beta > 45) {
-            newOrientation = ORIENTATIONS.DOWN; // Portrait
-        } else if (beta < -45) {
-            newOrientation = ORIENTATIONS.UP; // Upside down
+        // Check for landscape first, as gamma is less ambiguous
+        if (gamma < -45) { // Tilted right from calibrated position
+            newOrientation = ORIENTATIONS.LEFT; 
+        } else if (gamma > 45) { // Tilted left from calibrated position
+            newOrientation = ORIENTATIONS.RIGHT;
+        } else {
+            // If not landscape, check for portrait vs upside-down
+            // An upside-down rotation is a ~180 degree change in beta
+            if (Math.abs(beta) > 135) {
+                 newOrientation = ORIENTATIONS.UP; // Upside down
+            } else {
+                 newOrientation = ORIENTATIONS.DOWN; // Portrait (close to calibrated position)
+            }
         }
 
         if (newOrientation !== this.currentOrientation) {
